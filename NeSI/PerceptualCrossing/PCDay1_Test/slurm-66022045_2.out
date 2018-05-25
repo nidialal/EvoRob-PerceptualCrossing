@@ -1,0 +1,2 @@
+/var/spool/slurmd/job66022049/slurm_script: line 16: 14983 Killed                  python GA_robotPC.py $SLURM_ARRAY_TASK_ID
+slurmstepd: error: Exceeded step memory limit at some point.

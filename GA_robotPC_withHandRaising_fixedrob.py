@@ -1,0 +1,148 @@
+import numpy as np
+import random
+import robotPC_withHandRaising as rob
+from datetime import date as dt
+import os.path as op
+import os
+import sys
+from pprint import pprint
+
+REC_RATE = 0.5
+MUT_RATE = 0.02
+POP_SIZE = 30
+DEME_SIZ = 5
+
+def mutate(genotype):
+
+	for  i in range(numNodes):
+		if(random.random() < MUT_RATE):
+			gene_new = np.random.normal(genotype[2*numEdges+numNodes+i],0.001,1)[0]
+			if(gene_new<-0.1):
+				gene_new = -0.1
+			elif(gene_new>0.1):
+				gene_new = 0.1
+			genotype[2*numEdges+numNodes+i]=gene_new
+			if(random.random()<0.05):
+				genotype[2*numEdges+numNodes+i] = genotype[2*numEdges+numNodes+i] * -1	
+	return genotype
+
+
+def recombine(genotypes): 
+	'''
+	**** Microbial Recombination
+	**** First one is the winner and second is the loser
+	'''
+	for i in xrange(numNodes):
+		if(random.random() < REC_RATE):
+			genotypes[1][2*numEdges+numNodes+i] = genotypes[0][2*numEdges+numNodes+i]
+	return genotypes
+
+
+def fitness(genotype):#adj_Mat,num_Nodes,num_Edges,a,b,c
+	'''
+	**** Robot Move
+	'''
+	return rob.move_rob(adjMat,numNodes,numEdges,genotype[:numNodes],genotype[numNodes:numNodes+numEdges],genotype[numEdges+numNodes:2*numEdges+numNodes],genotype[2*numEdges+numNodes:],fileName+".txt",folderName)
+
+def create_genotype(genotype):
+
+	delta =[]
+	for  i in range(numNodes):
+		delta.append(random.uniform(0,0.1))
+
+	return genotype+delta
+
+def tournament():
+	index1 = int(random.random()*POP_SIZE)
+	index2 = int(index1+(random.randint(1,DEME_SIZ) * random.choice([-1,1])))%POP_SIZE
+	A = population[index1]
+	B = population[index2]
+	loser_index = 0
+	winner_index = 0
+	if (pop_fitness[index1]>pop_fitness[index2]):
+		W = A
+		L = B
+		loser_index = index2
+		winner_index = index1
+	else:
+		W = B
+		L = A
+		loser_index = index1
+		winner_index = index2
+	[W,L]=recombine([W,L])
+	L=mutate(L)
+	population[loser_index]=L
+	return (loser_index,winner_index)
+
+numNodes = 3#int(raw_input("Input number of nodes:"))
+numEdges = 0
+adjMat = [[0]*numNodes for x in range(numNodes) ]
+
+for i in range(numNodes):
+	for j in range(numNodes):
+		adjMat[i][j] = 0 if i==j else 1
+		if(adjMat[i][j]==1):
+			numEdges+=1
+
+genotype = [0.07219304228491538, -0.071975366794119852, -0.013444000667569955, 1.5619422517732224, 1.5287782127679348, 1.6, 1.4070114051553197, 1.5816729116891357, 1.4, 0.8204346131400578, 1, 1, 1, 0.35573438030526583, 0.3557523518379714]
+population = [create_genotype(genotype) for i in range(POP_SIZE)]
+
+counter=0
+mean_fitness = []
+peak_fitness = []
+num = sys.argv[1]
+
+folderName = "PC_"+str(num) +"_"+ str(dt.today())
+fileName = num
+
+if not op.exists(folderName):
+	os.makedirs(folderName)
+
+folderName += "/"
+
+pop_fitness = map(fitness,population)
+
+file_popfit = open(folderName+"PopFitness"+fileName+".txt",'a+')
+for fit_score in pop_fitness:
+	file_popfit.write(str(fit_score)+",")
+file_popfit.write("\n\n")
+file_popfit.close()
+
+while (counter<6000):
+
+	(loser_index,winner_index) = tournament()
+	pop_fitness[loser_index] = fitness(population[loser_index])
+
+	if(random.random()<0.1):
+		pop_fitness[winner_index] = fitness(population[winner_index])
+
+	file_popfit = open(folderName+"PopFitness"+fileName+".txt",'a+')
+	for fit_score in pop_fitness:
+		file_popfit.write(str(fit_score)+",")
+	file_popfit.write("\n\n")
+	file_popfit.close()
+
+	file_m = open(folderName+"MeanFitness_"+fileName+".txt",'a+')
+	mean_score = np.mean(pop_fitness)
+	file_m.write(str(mean_score)+",")
+	file_m.close()
+
+	file_p = open(folderName+"PeakFitness_"+fileName+".txt",'a+')
+	peak_score=np.max(pop_fitness)
+	file_p.write(str(peak_score)+",")
+	file_p.close()
+
+	counter+=1
+
+
+file = open(folderName+"FinalPop"+fileName+".txt",'a+')
+for i,individual in enumerate(population):
+	file.write("Score=" + str(pop_fitness[i])+'\n')
+	file.write(str(individual)+'\n')
+	file.write('\n')
+
+file.write('\n\n\nFinal Population\n')
+for individual in population:
+	file.write(str(individual)+'\n')
+
+file.close()

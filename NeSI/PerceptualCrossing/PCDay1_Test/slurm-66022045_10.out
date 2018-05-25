@@ -1,0 +1,4 @@
+slurmstepd: error: Job 66022045 exceeded memory limit (16781796 > 16777216), being killed
+slurmstepd: error: Exceeded job memory limit
+slurmstepd: error: *** JOB 66022045 ON compute-c1-059 CANCELLED AT 2017-11-15T19:46:50 ***
+slurmstepd: error: Exceeded step memory limit at some point.
